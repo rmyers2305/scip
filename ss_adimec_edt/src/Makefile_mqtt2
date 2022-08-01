@@ -1,0 +1,87 @@
+TRUNK_REL_PATH=../..
+include $(TRUNK_REL_PATH)/makefile_common_include
+
+#### For the EosAdimecMain executable
+OBJS_EOS_ADIMEC =  EosAdimec.o \
+	  	   EosAdimecMain.o 
+
+OBJS_CAMLINK = ../../camlink_comms/src/CamLinkComms.o \
+	       ../../camlink_comms/src/CamLinkCommsEdt.o
+
+SRCS_CAMLINK = $(OBJS_CAMLINK:.o=.cpp)
+
+#### For the EosAdimecMain simulator executable
+OBJS_EOS_ADIMEC_SIM =  	EosAdimecSimulator.o \
+	  	   	EosAdimecSimMain.o 
+
+SRCS_EOS_ADIMEC = $(OBJS_EOS_ADIMEC:.o=.cpp)
+
+SRCS_EOS_ADIMEC_SIM = $(OBJS_EOS_ADIMEC_SIM:.o=.cpp)
+
+all: ../bin/EosAdimecEdtMqtt2Main.x ../bin/EosAdimecSimMqtt2Main.x
+
+../bin/EosAdimecEdtMqtt2Main.x: $(OBJS_EOS_ADIMEC) $(OBJS_CAMLINK) $(OBJS_MQTT2_COMMON)
+	PWD_SAVE=$(PWD); cd ../../camlink_comms/src; make all; cd ../../common/src; make all; \
+	make -f Makefile_mqtt2 all; cd $(PWD_SAVE);
+	if [ ! -d ../bin ]; then mkdir ../bin; fi;
+	@echo
+	@echo "########### Building Executable" $@ "##############"
+	g++ $(abspath $(OBJS_EOS_ADIMEC) $(OBJS_CAMLINK) $(OBJS_MQTT2_COMMON)) -o $(abspath $@) \
+	$(BOOST_LIBS) $(EDT_LIBS) $(MQTT_LIBS) $(LD_PROF_FLAGS) -lpdv -ldl
+
+../bin/EosAdimecSimMqtt2Main.x: $(OBJS_EOS_ADIMEC_SIM) $(OBJS_MQTT2_COMMON)
+	PWD_SAVE=$(PWD); cd ../../common/src; make all; make -f Makefile_mqtt2 all; cd $(PWD_SAVE);
+	if [ ! -d ../bin ]; then mkdir ../bin; fi;
+	@echo
+	@echo "########### Building Executable" $@ "##############"
+	g++ $(abspath $(OBJS_EOS_ADIMEC_SIM) $(OBJS_MQTT2_COMMON)) -o $(abspath $@) \
+	$(BOOST_LIBS) $(EDT_LIBS) $(MQTT_LIBS) $(LD_PROF_FLAGS)
+
+
+#### WARNING: Don't use -I/opt/EDTpdv (aka $(EDT_INCLUDE)) in the compile operation below.
+#### There is a file named "version" in /opt/EDTpdv that includes the EDTpdv
+#### version number.  Many boost header files include this line: "#include <version>".
+#### If the boost header files #include the EDTpdv version file, the compile will fail
+#### with an extremely ugly error dump. The full path to /opt/EDTpdv/edtinc.h is
+#### is #included in the EosAdimec.h file.
+
+.c.o: 
+	@echo
+	@echo "### Building Object" $@ "###"
+	g++ -c  -I../include -I../../camlink_comms/include  $(abspath $<) -o $(abspath $@) \
+	$(COMMON_COMPILER_FLAGS) $(BOOST_INCLUDE) $(MQTT_INCLUDE) \
+	$(PROF_FLAGS) \
+	-D_BUILD_MQTT_ \
+	-D__BUILD_DATE_TIME=$(BUILD_DATE_TIME) -D__BUILD_VERSION=$(BUILD_VERSION)
+
+
+.cpp.o: 
+	@echo
+	@echo "### Building Object" $@ "###"
+	g++ -c  -I../include -I../../camlink_comms/include -I../../common/include   \
+	$(COMMON_COMPILER_FLAGS) $(BOOST_INCLUDE) $(MQTT_INCLUDE) \
+	$(PROF_FLAGS)  $(abspath $<) -o $(abspath $@)  \
+	-D_BUILD_MQTT_ \
+	-D__BUILD_DATE_TIME=$(BUILD_DATE_TIME) -D__BUILD_VERSION=$(BUILD_VERSION)
+
+
+clean:
+	rm -f ../bin/*.x *.o ../../common/src/*.o ../../camlink_comms/src/*.o
+
+localclean:
+	rm -f ../bin/*.x *.o 
+
+
+depend:
+	g++ -c -I../include -I../../camlink_comms/include -I../../common/include $(COMMON_COMPILER_FLAGS)\
+	     $(BOOST_INCLUDE) -MMD -MP $(SRCS_EOS_ADIMEC) -D_BUILD_MQTT_ \
+	    -D__BUILD_DATE_TIME=$(BUILD_DATE_TIME) \
+	    -D__BUILD_VERSION=$(BUILD_VERSION)
+
+	g++ -c -I../include -I../../common/include $(COMMON_COMPILER_FLAGS)\
+	     $(BOOST_INCLUDE) -MMD -MP $(SRCS_EOS_ADIMEC_SIM) -D_BUILD_MQTT_ \
+	    -D__BUILD_DATE_TIME=$(BUILD_DATE_TIME) \
+	    -D__BUILD_VERSION=$(BUILD_VERSION)
+
+-include $(SRCS_EOS_ADIMEC_SIM:.cpp=.d)
+-include $(SRCS_EOS_ADIMEC:.cpp=.d)

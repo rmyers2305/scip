@@ -1,0 +1,141 @@
+-Run the EDTpdv_lnx_W.X.Y.Z.run file as sudo and when prompted  
+ enter the desired location for the EDT files
+
+-Do NOT try to install with the SCIP_SHELL_ENVIRONMENT active.
+
+-Note that the EDT installer WON'T create its own folder, you  
+ must specify the folder where the libs and executables will 
+ live.
+
+-Supplying home/opt/local will install all libs in local, instead  
+ use 
+		 /home/opt/local/EDTpdv
+
+-To ease camera-link configuration, also install to the default 
+ location of /opt/EDTpdv (note: /opt/* is root.root ownership
+ except for /opt/EDTpdv (which has ownership eoslab.eoslab).
+
+
+-Create a symlink to libtiff.so.5 inside EDTpdv/
+-Have to search for this one,it does not come with EDT. 
+-On the test OWL it's in /usr/lib/ 
+                     (ln -s /usr/lib/libtiff.so.5 .)
+-There may also be a copy in /home/eoslab/opt/local/lib
+
+-Copy in the custom Adimec .cfg files into the 
+               /home/eoslab/opt/local/EDTpdv/camera_config folder
+-Currently they are called:
+		adimec1600cd_10cl_bayer.cfg
+		adimec1600cd_12cl_bayer.cfg
+		adimec1600md_10cl_bayer.cfg
+
+-Copy them to /opt/EDTpdv/camera-config (or camera_config?)
+
+-Edit the EDTpdv makefile to add -fPIC to CFLAGS
+
+Make sure that the above makefile uses the proper version of qmake (version>=4). 
+If it insists on using qt3 qmake, modify $PATH so that qt4 qmake is picked up first 
+(i.e. /usr/lib64/qt4/bin)
+
+
+## Need these to build vlviewer/libpdv.so below
+export PATH=/usr/lib64/qt4/bin:$PATH
+export CFLAGS="-fPIC"
+
+Remember -- do not build vlviewer or libpdv.so with the SCIP build environment enabled.
+
+
+-Run sudo make vlviewer
+
+-Run sudo make libpdv.so if libpdv.so has not already been
+ created.
+
+- Recursively change owner of the EDTpdv/ folder to eoslab.eoslab 
+  (chown -R EDTpdv eoslab.eoslab)
+
+-If permissions don't copy over recursively clone the 
+ User permissions to group (chmod g=u -R EDTpdv)
+
+-copy libpdv.so to ~/opt/SCIP-VIDEO-LIB1.2.4/lib/gstreamer-1.0/
+-make sure LD_LIBRARY_PATH includes the directory containing
+ libpdv.so. 
+
+-For good measure, make sure that LD_LIBRARY_PATH
+ also includes the EDTpdv installation directory.
+
+Find liblibstedt.so and run ldd on it. Make sure that ldd
+can find libpdv.so
+
+cd to ~/.gstreamer-1.0 and remove the "blacklist" file, if any.
+(the "blacklist" file will prevent gstreamer from loading the
+ modules needed to stream video from the Camera Link framegrabber.
+
+From the SCIP trunk (gst-xxx-camera-link directory), locate all the liblib*.so files
+and copy them to /home/eoslab/opt/SCIP-VIDEO-LIB1.2.4/lib/gstreamer-1.0
+
+
+- Recursively change owner of the EDTpdv/ folder to eoslab.eoslab (chown -R EDTpdv eoslab.eoslab)
+-If permissions don't copy over recursively clone the User permissions to group	(chmod g=u -R EDTpdv)
+
+
+Reminder: To run vlviewer, must set LD_LIBRARY_PATH so that it 
+can pick up libdispatch.so in /home/eoslab/opt/local/EDTpdv
+
+i.e. export LD_LIBRARY_PATH=/home/eoslab/opt/local/EDTpdv:$LD_LIBRARY_PATH
+
+Run vlviewer first as root, then use the Camera -> Camera Select 
+to get the Adimec 1600C/D 10bit continuous setting (or something like that).
+
+More vlviewer issues:
+
+    Launch vlviewer, choose
+      "1600C/D test 10-bit, camera continuous" item in the
+      camera->select-camera dropdown menu. (Expand Adimec menu 
+      node).  Corresponds to file adimec1600cd_10cl_bayer.cfg
+      in /opt/EDTpdv/camera_config or 
+      /home/eoslab/opt/local/EDTpdv/camera_config 
+
+    vlviewer defaults to channel 0, cannot change the channel
+    from within vlviewer.  If adimec is loaded into channel 0,
+    and vlviewer is relaunched, it may crash.
+
+    Run initcam as follows:
+
+    CD to EDTpdv (in /opt or /home/eos/opt/local) and run
+    as follows:
+
+    ./initcam -f camera_config/adimec1600cd_10cl_bayer.cfg -c 1
+
+    But this is not enough -- must clear adimec settings from 
+    channel 0 by loading any non-adimec camera configuration, 
+    i.e.  
+
+   ./initcam -f \
+    camera_config/any_non_adimec_camera.cfg -c 0
+      
+
+    Now should be able to relaunch vlviewer.
+
+    Need to relaunch vlviewer specifying chan 1 to pick up
+    adimec settings.
+
+    ./vlviewer -c 1
+
+scip_video.x (when run in the SCIP_SHELL_ENVIRONMENT environment) should now be 
+able to use the edt interface.
+
+Adimec (and swir) EosAdimecMain.x, EosSwirCamlinkMain.x need libpdv.so 
+
+vlviewer needs libdispatch.so (created in ...opt/EDTpdv,
+may need to copy it elsewhere).
+
+
+EosAdimecMain.x frame-grabber operations ripped straight from
+EDTpdv sample code file serial_command.c (pretty much copy/paste
+into EosAdimecMain.x)
+
+
+
+EDTpdv executables may crash randomly if the camera is not connected 
+to the frame grabber.
+

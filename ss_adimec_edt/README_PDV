@@ -1,0 +1,39 @@
+	The Adimec can be controlled directly through EDT's vlviewer application. At the time
+of this writing vlviewer is located in `/opt/local/EDTpdv. Vlviewer needs to be run as sudo.
+Once you run vlviewer it will ask for camera config file. There are currently three config 
+files written for our Adimec 1600 c/d, adimec1600cd_10cl_bayer.cfg, 
+adimec1600md_10cl_bayer.cfg, and adimec1600cd_12cl_bayer.cfg. Use either the cd_10cl_bayer
+or the md_10cl_bayer config files. They set the camera to use a 10bit output resolution. 
+The cd_12_bayer file will set the camera to use a 12 bit output resolution but I can't get
+the adimec to perform correctly when set to 12 bit.
+
+	The EDT Framegrabber has two channels that allows for the simulaneous operation
+of two digital cameras. However each channel needs to be initalized before it can be
+used. As far as I can tell the easiest way to achieve this is to build and run EDT's
+supplied initcam.c program and pass to it the config file for the camera that will be 
+used as well as the channel number that the camera will be used on.
+	Often the initcam.c file will be built during the same build process that makes
+EDT's vlviewer program. If either the build process fails to make initcam or vlviewer is
+not being built initcam can be built seperately by simply navigating to the EDTpdv 
+folder and running ' make initcam '(without the apostrophes). Depending on library 
+ownership and permissions this may need to be run as sudo.
+	Once initcam is built navigate to ss_adimec/scripts/EDT and run the 
+pdv_init.sh script. This script is currently set to initialize both channels and 
+configure them to run the adimec1600c/d. If the script fails to properly execute or 
+different camera config files need to be supplied the channels can be configured 
+manually.
+	If needed navigate to the EDTpdv/ folder then execute 
+' ./initcam -f <path/to/config/file> -c <channel number (0 or 1)> ' 
+This should properly configure the supplied channel to operate with the desired camera.
+If two cameras are to be installed rerun the command and then specify the other channel.
+
+  
+
+For owl-01-02.sd.spawar.navy.mil, do the following:
+
+cd /opt/EDTPdv
+./initcam -f camera_config/adimec1600cd_10cl_bayer.cfg -c 0
+         or 
+./initcam -u 0 -f camera_config/adimec1600cd_10cl_bayer.cfg  
+
+./vlviewer

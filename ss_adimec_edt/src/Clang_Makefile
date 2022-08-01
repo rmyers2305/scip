@@ -1,0 +1,56 @@
+TRUNK_REL_PATH=../..
+include $(TRUNK_REL_PATH)/makefile_common_include
+
+PROF_FLAG=
+
+#### For the EosDevicePowerMain process
+OBJS_EOS_UIB = 	EosDevicePowerMain.o \
+	  	EosDevicePower.o 
+
+###		EosPower.o
+
+SRCS_EOS_UIB = $(OBJS_EOS_UIB:.o=.cpp)
+
+
+all: ../bin/EosDevicePowerMain.x
+
+$(OBJS_COMMON): $(TRUNK_REL_PATH)/common/src/%.o: \
+                $(TRUNK_REL_PATH)/common/include/%.h
+
+
+../bin/EosDevicePowerMain.x: $(OBJS_EOS_UIB) $(OBJS_COMMON)
+	@echo
+	@echo "########### Building Executable" $@ "##############"
+	g++ $(OBJS_EOS_UIB) $(OBJS_COMMON) -o $@ \
+	$(BOOST_LIBS) -L$(BOOST_LIB_DIR)
+
+.c.o:
+	@echo
+	@echo "### Building Object" $@ "###"
+	${SCAN_BUILD} -k --use-analyzer=${CLANGXX} -o ${CLANG_SCAN_DIR} \
+	g++ -c  -I../include -I$(BOOST_INCLUDE_DIR) $< -o $@ \
+	$(COMMON_COMPILER_FLAGS) -std=gnu++11 \
+	-D__BUILD_DATE_TIME=$(BUILD_DATE_TIME) -D__BUILD_VERSION=$(BUILD_VERSION)
+
+
+.cpp.o:
+	@echo
+	@echo "### Building Object" $@ "###"
+	${SCAN_BUILD} -k --use-analyzer=${CLANGXX} -o ${CLANG_SCAN_DIR} \
+	g++ -c -I../include -I../../common/include  -std=gnu++11 \
+	$(COMMON_COMPILER_FLAGS) $(PROF_FLAG) -I$(BOOST_INCLUDE_DIR) $< -o $@  \
+	-D__BUILD_DATE_TIME=$(BUILD_DATE_TIME) -D__BUILD_VERSION=$(BUILD_VERSION)
+
+
+clean:
+	rm -f ../bin/EosDevicePowerMain.x *.o ../../common/src/*.o
+
+
+depend:
+	g++ -c -I../include -I../../common/include $(COMMON_COMPILER_FLAGS)\
+	    -I$(BOOST_INCLUDE_DIR) -MD -MMD -MP $(SRCS_EOS_UIB) -std=gnu++11 \
+	    -D__BUILD_DATE_TIME=$(BUILD_DATE_TIME) \
+	    -D__BUILD_VERSION=$(BUILD_VERSION)
+
+-include $(SRCS_EOS_UIB:.cpp=.d)
+-include $(SRCS_COMMON:.cpp=.d)

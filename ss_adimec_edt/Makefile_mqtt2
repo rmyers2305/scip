@@ -1,0 +1,14 @@
+### Want to force EosDevice.o to be rebuilt every time
+### to ensure that it gets built with the proper EosClientComms
+### (EosClientSocket vs. EosClientSerialPort) comm interface.
+all:
+	cd src; make -f Makefile_mqtt2 all; 
+
+clean:
+	cd src; make -f Makefile_mqtt2 clean;
+
+
+depend:
+	cd src; make -f Makefile_mqtt2 depend;
+
+
